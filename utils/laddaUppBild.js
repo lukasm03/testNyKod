@@ -16,7 +16,7 @@ export default async function laddaUppBild(fil) {
     }
   });
   //ladda upp filen till lagringen
-  databasAnslutning.send(new PutObjectCommand({
+  await databasAnslutning.send(new PutObjectCommand({
     Bucket: namnpåBucket,
     Key: fil.namn,
     Body: fil.bild,
