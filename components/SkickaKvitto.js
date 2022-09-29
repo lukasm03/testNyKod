@@ -1,7 +1,7 @@
-import {useState} from "react";
+import { useState } from "react";
 import styles from '../styles/SkickaKvitto.module.css'
-import {initializeApp} from "firebase/app";
-import {getDownloadURL, getStorage, ref, uploadString} from "firebase/storage";
+import { initializeApp } from "firebase/app";
+import { getDownloadURL, getStorage, ref, uploadString } from "firebase/storage";
 
 export default function SkickaKvitto() {
     const [state, setState] = useState({
@@ -42,32 +42,17 @@ export default function SkickaKvitto() {
 
     const hanteraNytt = async event => {
         if (event.target.name === "bild") {
-            const reader = new FileReader();
-            reader.onloadend = function () {
-                setBase64(reader.result)
+            console.log("WOOOHO")
+            let reader = new FileReader()
+            reader.readAsDataURL(event.target.files[0])
+            const namn = event.target.files[0].name
+            reader.onload = async () => {
+                await fetch('/api/SkickaData', {
+                    method: 'POST',
+                    body:   JSON.stringify({bild: reader.result, 
+                            namn: namn}),
+                });
             }
-            reader.readAsDataURL(event.target.files[0]);
-
-            const value = event.target.value;
-            setState({
-                ...state,
-                [event.target.name]: value
-            });
-        } else if (event.target.value === "Laborationer" && state.typavkop === "intäkt") {
-            setState({
-                ...state,
-                [event.target.name]: "Medlemsavgifter"
-            });
-        } else if (event.target.value === "Medlemsavgifter" && state.typavkop === "avgift") {
-            setState({
-                ...state,
-                [event.target.name]: "Laborationer"
-            });
-        } else {
-            setState({
-                ...state,
-                [event.target.name]: event.target.value
-            });
         }
     }
 
@@ -201,12 +186,12 @@ export default function SkickaKvitto() {
                 <form className={styles.formStyle} onSubmit={handleSubmit} onChange={hanteraNytt}>
                     <label className={styles.labelStyle} htmlFor="kategori">kategori på {state.typavkop}:</label>
                     <select className={styles.kategori} name="kategori" id="kategori" value={vilkenDefaultValue()}
-                            required>
+                        required>
                         <option value="Laborationer" name="Laborationer"
-                                hidden={vilkenSkaVisas("Laborationer")}>Laborationer
+                            hidden={vilkenSkaVisas("Laborationer")}>Laborationer
                         </option>
                         <option value="Medlemsavgifter" name="Medlemsavgifter"
-                                hidden={vilkenSkaVisas("Medlemsavgifter")}>Medlemsavgifter
+                            hidden={vilkenSkaVisas("Medlemsavgifter")}>Medlemsavgifter
                         </option>
                         <option value="Kök&fester">Kök & fester</option>
                         <option value="Försäljning">Försäljning</option>
@@ -215,7 +200,7 @@ export default function SkickaKvitto() {
                     </select>
                     <label className={styles.labelStyle} htmlFor="vara">vara:</label>
                     <input type="text" name="vara" placeholder="namn på vara (max 16 tecken)" value={state.vara}
-                           maxLength={16} required
+                        maxLength={16} required
                     />
                     <label className={styles.labelStyle} htmlFor="pris">pris:</label>
                     <input type="number" name="pris" placeholder="pris (skriv inte kr)" value={state.pris} required
@@ -224,13 +209,13 @@ export default function SkickaKvitto() {
                     <input type="date" name="datum" value={state.datum} placeholder={Date.now()} required
                     />
                     <label className={styles.labelStyle} htmlFor="bild">kvitto:</label>
-                    <input type="file" accept="image/*" name="bild" value={state.bild} style={{alignSelf: "center"}}
-                           placeholder="bild på kvitto"
-                           required
+                    <input type="file" accept="image/jpg, image/jpeg, image/png, image/gif, image/bmp" name="bild" value={state.bild} style={{ alignSelf: "center" }}
+                        placeholder="bild på kvitto"
+                        required
                     />
                     <label className={styles.labelStyle} htmlFor="vara">swish-nummer:</label>
                     <input type="tel" name="swish" value={state.swish} placeholder={"swishnummer"} required
-                           pattern="[0-9]{3}-[0-9]{7}|[0-9]{10}"/>
+                        pattern="[0-9]{3}-[0-9]{7}|[0-9]{10}" />
                     <button className={styles.buttonStyle} type="submit">
                         skicka in kvitto
                     </button>
