@@ -7,7 +7,10 @@ const region = process.env.BUCKET_REGION
 const accessKeyId = process.env.AWS_ACCESS_KEY_ID_LUKAS
 const secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY_LUKAS
 
-export default async function laddaUppBild(fil) {
+export default async function handler(req,res) {
+  const fil = JSON.parse(req.body)
+  const base64Data = new Buffer.from(fil.bild.replace(/^data:image\/\w+;base64,/, ""), 'base64');
+  const type = fil.bild.split(';')[0].split('/')[1];
   //anslut till lagringen
   const databasAnslutning = new S3Client({
     region, credentials: {
@@ -19,9 +22,11 @@ export default async function laddaUppBild(fil) {
   await databasAnslutning.send(new PutObjectCommand({
     Bucket: namnpåBucket,
     Key: fil.namn,
-    Body: fil.bild,
+    Body: base64Data,
+    ContentEncoding: 'base64',
+    ContentType: `image/${type}`
   }));
   //returnera länken till bilden 
-  return (`https://${namnpåBucket}.s3.amazonaws.com/${namnpåBucket}/${fil.namn}`)
+  return res.send({bildUrl:`https://${namnpåBucket}.s3.eu-north-1.amazonaws.com/${fil.namn}`})
 }
 

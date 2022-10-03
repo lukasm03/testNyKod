@@ -1,7 +1,5 @@
 import { useState } from "react";
 import styles from '../styles/SkickaKvitto.module.css'
-import { initializeApp } from "firebase/app";
-import { getDownloadURL, getStorage, ref, uploadString } from "firebase/storage";
 
 export default function SkickaKvitto() {
     const [state, setState] = useState({
@@ -9,236 +7,118 @@ export default function SkickaKvitto() {
         pris: "",
         datum: "",
         bild: "",
+        bildnamn: "",
         swish: "",
-        kategori: "",
-        typavkop: "",
+        kategori: "Laborationer",
+        typavkop: "avgift",
+        fixad: false
     })
     const [skickat, setSkickat] = useState("")
-    const [base64, setBase64] = useState("")
 
-    const handleSubmit = event => {
+    const handleSubmit = async event => {
         event.preventDefault();
-        laddaUppBildOchData({
-            vara: state.vara,
-            bild: base64,
-        })
+        await fetch('/api/laddaUppBild', {
+            method: 'POST',
+            body: JSON.stringify({
+                bild: state.bild,
+                namn: state.bildnamn
+            }),
+        }).then(res => res.json())
+        .then(async bildUrl => await fetch('/api/laddaUppData', {
+            method: 'POST',
+            body: JSON.stringify({
+                vara: state.vara,
+                pris: state.pris,
+                datum: state.datum,
+                bild: bildUrl.bildUrl,
+                swish: state.swish,
+                kategori: state.kategori,
+                typavkop: state.typavkop,
+                fixad: state.fixad
+            }),
+        }));
         setState({
             ...state,
             vara: "",
             pris: "",
             datum: "",
             bild: "",
+            bildnamn: "",
             swish: "",
         })
-        setBase64("")
         setSkickat("Kvitto inskickat!")
-        setTimeout(fixaText, 5000)
-
-        function fixaText() {
-            setSkickat("")
-        }
-
+        await new Promise(r => setTimeout(r, 5000));
+        setSkickat("")
     };
 
     const hanteraNytt = async event => {
         if (event.target.name === "bild") {
-            console.log("WOOOHO")
             let reader = new FileReader()
             reader.readAsDataURL(event.target.files[0])
-            const namn = event.target.files[0].name
+            const namn = (event.target.files[0].name)
             reader.onload = async () => {
-                await fetch('/api/SkickaData', {
-                    method: 'POST',
-                    body:   JSON.stringify({bild: reader.result, 
-                            namn: namn}),
-                });
+                setState({
+                    ...state,
+                    bild: reader.result,
+                    bildnamn: namn,
+                })
             }
-        }
-    }
-
-    function laddaUppBildOchData(data) {
-        const firebaseConfig = {
-            apiKey: process.env.apiKey,
-            authDomain: process.env.authDomain,
-            projectId: process.env.projectId,
-            storageBucket: "nfkvitton.appspot.com",
-            messagingSenderId: process.env.messagingSenderId,
-            appId: process.env.appId,
-            measurementId: process.env.measurementId
-        };
-        const firebaseApp = initializeApp(firebaseConfig);
-        const storage = getStorage(firebaseApp)
-        const storageRef = ref(storage, data.vara);
-        const message4 = data.bild;
-
-        uploadString(storageRef, message4, 'data_url').then((snapshot) => {
-            return getDownloadURL(snapshot.ref)
-        }).then(async downloadURL => {
-            try {
-                if (state.kategori === "Laborationer" && state.typavkop === "intäkt") {
-                    await fetch('/api/SkickaData', {
-                        method: 'POST',
-                        body: JSON.stringify({
-                            vara: state.vara,
-                            pris: Math.round(state.pris),
-                            kategori: "Medlemsavgifter",
-                            datum: state.datum,
-                            bild: downloadURL,
-                            swish: state.swish,
-                            typavköp: state.typavkop,
-                            fixad: false
-                        }),
-                    });
-                } else if (state.kategori === "Medlemsavgifter" && state.typavkop === "avgift") {
-                    await fetch('/api/SkickaData', {
-                        method: 'POST',
-                        body: JSON.stringify({
-                            vara: state.vara,
-                            pris: Math.round(state.pris),
-                            kategori: "Laborationer",
-                            datum: state.datum,
-                            bild: downloadURL,
-                            swish: state.swish,
-                            typavköp: state.typavkop,
-                            fixad: false
-                        }),
-                    });
-                } else if (state.kategori === "" && state.typavkop === "intäkt") {
-                    await fetch('/api/SkickaData', {
-                        method: 'POST',
-                        body: JSON.stringify({
-                            vara: state.vara,
-                            pris: Math.round(state.pris),
-                            kategori: "Medlemsavgifter",
-                            datum: state.datum,
-                            bild: downloadURL,
-                            swish: state.swish,
-                            typavköp: state.typavkop,
-                            fixad: false
-                        }),
-                    });
-                } else if (state.kategori === "" && state.typavkop === "avgift") {
-                    await fetch('/api/SkickaData', {
-                        method: 'POST',
-                        body: JSON.stringify({
-                            vara: state.vara,
-                            pris: Math.round(state.pris),
-                            kategori: "Laborationer",
-                            datum: state.datum,
-                            bild: downloadURL,
-                            swish: state.swish,
-                            typavköp: state.typavkop,
-                            fixad: false
-                        }),
-                    });
-                } else {
-                    await fetch('/api/SkickaData', {
-                        method: 'POST',
-                        body: JSON.stringify({
-                            vara: state.vara,
-                            pris: Math.round(state.pris),
-                            kategori: state.kategori,
-                            datum: state.datum,
-                            bild: downloadURL,
-                            swish: state.swish,
-                            typavköp: state.typavkop,
-                            fixad: false
-                        }),
-                    });
-                }
-            } catch (error) {
-                console.log("error", error)
-            }
-        })
-    }
-
-    function vilkenSkaVisas(typ) {
-        if (typ === "Laborationer") {
-            return state.typavkop === "intäkt";
-        } else if (typ === "Medlemsavgifter") {
-            return state.typavkop === "avgift";
-        }
-    }
-
-    function vilkenDefaultValue() {
-        if (state.typavkop === "intäkt" && state.kategori === "") {
-            return "Medlemsavgifter"
-        } else if (state.typavkop === "avgift" && state.kategori === "") {
-            return "Laborationer"
-        } else if (state.typavkop === "avgift" && state.kategori === "Medlemsavgifter") {
-            return "Laborationer"
-        } else if (state.typavkop === "intäkt" && state.kategori === "Laborationer") {
-            return "Medlemsavgifter"
         } else {
-            return state.kategori
+            setState({
+                ...state,
+                [event.target.name]: event.target.value
+            });
         }
     }
 
-    return state.typavkop !== ""
-        ? (
-            <div className={styles.Form}>
-                <div className={styles.centerKnappar}>
-                    <button name="typavkop" value="avgift" onClick={hanteraNytt}>avgifter
-                    </button>
-                    <button name="typavkop" value="intäkt" onClick={hanteraNytt}>intäkt
-                    </button>
-                </div>
-                <form className={styles.formStyle} onSubmit={handleSubmit} onChange={hanteraNytt}>
-                    <label className={styles.labelStyle} htmlFor="kategori">kategori på {state.typavkop}:</label>
-                    <select className={styles.kategori} name="kategori" id="kategori" value={vilkenDefaultValue()}
-                        required>
-                        <option value="Laborationer" name="Laborationer"
-                            hidden={vilkenSkaVisas("Laborationer")}>Laborationer
-                        </option>
-                        <option value="Medlemsavgifter" name="Medlemsavgifter"
-                            hidden={vilkenSkaVisas("Medlemsavgifter")}>Medlemsavgifter
-                        </option>
-                        <option value="Kök&fester">Kök & fester</option>
-                        <option value="Försäljning">Försäljning</option>
-                        <option value="NF-artiklar">NF-artiklar</option>
-                        <option value="Övrigt">Övrigt</option>
-                    </select>
-                    <label className={styles.labelStyle} htmlFor="vara">vara:</label>
-                    <input type="text" name="vara" placeholder="namn på vara (max 16 tecken)" value={state.vara}
-                        maxLength={16} required
-                    />
-                    <label className={styles.labelStyle} htmlFor="pris">pris:</label>
-                    <input type="number" name="pris" placeholder="pris (skriv inte kr)" value={state.pris} required
-                    />
-                    <label className={styles.labelStyle} htmlFor="datum">datum:</label>
-                    <input type="date" name="datum" value={state.datum} placeholder={Date.now()} required
-                    />
-                    <label className={styles.labelStyle} htmlFor="bild">kvitto:</label>
-                    <input type="file" accept="image/jpg, image/jpeg, image/png, image/gif, image/bmp" name="bild" value={state.bild} style={{ alignSelf: "center" }}
-                        placeholder="bild på kvitto"
-                        required
-                    />
-                    <label className={styles.labelStyle} htmlFor="vara">swish-nummer:</label>
-                    <input type="tel" name="swish" value={state.swish} placeholder={"swishnummer"} required
-                        pattern="[0-9]{3}-[0-9]{7}|[0-9]{10}" />
-                    <button className={styles.buttonStyle} type="submit">
-                        skicka in kvitto
-                    </button>
-                    <p style={{
-                        display: "inline-block",
-                        marginLeft: "0.5vw",
-                        fontWeight: "bold",
-                        fontSize: "0.7rem"
-                    }}>{skickat}</p>
-                </form>
+    return (
+        <div className={styles.Form}>
+            <div className={styles.centerKnappar}>
+                <button name="typavkop" value="avgift" onClick={hanteraNytt}>avgifter
+                </button>
+                <button name="typavkop" value="intäkt" onClick={hanteraNytt}>intäkt
+                </button>
             </div>
-        ) : (
-            <div className={styles.Form}>
-                <div className={styles.centerKnappar}>
-                    <button name="typavkop" onClick={() => setState({
-                        ...state, "typavkop": "avgift"
-                    })}>avgifter
-                    </button>
-                    <button name="typavkop" onClick={() => setState({
-                        ...state, "typavkop": "intäkt"
-                    })}>intäkt
-                    </button>
-                </div>
-            </div>
-        )
+            <form className={styles.formStyle} onSubmit={handleSubmit} onChange={hanteraNytt}>
+                <label className={styles.labelStyle} htmlFor="kategori">kategori på {state.typavkop}:</label>
+                <select className={styles.kategori} name="kategori" id="kategori" required>
+                    <option value="Laborationer" name="Laborationer">Laborationer
+                    </option>
+                    <option value="Medlemsavgifter" name="Medlemsavgifter">Medlemsavgifter
+                    </option>
+                    <option value="Kök&fester">Kök & fester</option>
+                    <option value="Försäljning">Försäljning</option>
+                    <option value="NF-artiklar">NF-artiklar</option>
+                    <option value="Övrigt">Övrigt</option>
+                </select>
+                <label className={styles.labelStyle} htmlFor="vara">vara:</label>
+                <input type="text" name="vara" placeholder="namn på vara (max 16 tecken)" value={state.vara}
+                    maxLength={16} required
+                />
+                <label className={styles.labelStyle} htmlFor="pris">pris:</label>
+                <input type="number" name="pris" placeholder="pris (skriv inte kr)" value={state.pris} required
+                />
+                <label className={styles.labelStyle} htmlFor="datum">datum:</label>
+                <input type="date" name="datum" value={state.datum} placeholder={Date.now()} required
+                />
+                <label className={styles.labelStyle} htmlFor="bild">kvitto:</label>
+                <input type="file" accept="image/jpg, image/jpeg, image/png, image/gif, image/bmp" name="bild" value={state.bild} style={{ alignSelf: "center" }}
+                    placeholder="bild på kvitto"
+                    required
+                />
+                <label className={styles.labelStyle} htmlFor="vara">swish-nummer:</label>
+                <input type="tel" name="swish" value={state.swish} placeholder={"swishnummer"} required
+                    pattern="[0-9]{3}-[0-9]{7}|[0-9]{10}" />
+                <button className={styles.buttonStyle} type="submit">
+                    skicka in kvitto
+                </button>
+                <p style={{
+                    display: "inline-block",
+                    marginLeft: "0.5vw",
+                    fontWeight: "bold",
+                    fontSize: "0.7rem"
+                }}>{skickat}</p>
+            </form>
+        </div>
+    )
 }
