@@ -3,7 +3,6 @@ import HeaderBild from "../../components/HeaderBild";
 import adminStyles from '../../styles/adminStyles.module.css'
 import UppdateraKvitto from "../../components/ÄndraKvitto";
 const databasAnslutning = require('../../utils/anslutTillDatabas')
-import axios from "axios";
 
 export default function Home({ data, bild }) {
     return (
@@ -36,12 +35,12 @@ export async function getStaticPaths() {
 
 export async function getStaticProps({ params }) {
     const kvittoInfo = await databasAnslutning.query('SELECT * FROM kvitton WHERE id = $1', [parseInt(params.id)])
-    console.log(await kvittoInfo.rows)
+    const rader = await kvittoInfo.rows[0]
     return {
         props: {
             data: {
-                vara: await kvittoInfo.rows[0].vara, pris: await kvittoInfo.rows[0].pris, swish: await kvittoInfo.rows[0].swish, id: await kvittoInfo.rows[0].id,
-                datum: await kvittoInfo.rows[0].datum, kategori: await kvittoInfo.rows[0].kategori, fixad: await kvittoInfo.rows[0].fixad,
+                vara: rader.vara, pris: rader.pris, swish: rader.swish, id: rader.id,
+                datum: rader.datum, kategori: rader.kategori, fixad: rader.fixad,
             }
         },
     };
