@@ -25,7 +25,7 @@ export default function Home({ data }) {
         </>
     )
 }
-export async function getStaticProps() {
+export async function getServerSideProps() {
     const data = await databasAnslutning.query('SELECT * FROM kvitton ORDER BY id ASC')
     return {
         props: {
