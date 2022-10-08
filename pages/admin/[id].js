@@ -30,7 +30,7 @@ export async function getStaticPaths() {
             id: data.id.toString()
         }
     }))
-    return { paths, fallback: true };
+    return { paths, fallback: false };
 }
 
 export async function getStaticProps({ params }) {
