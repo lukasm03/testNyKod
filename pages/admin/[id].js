@@ -40,8 +40,8 @@ export async function getStaticProps({ params }) {
     return {
         props: {
             data: {
-                vara: kvittoInfo.rows[0].vara, pris: kvittoInfo.rows[0].pris, swish: kvittoInfo.rows[0].swish, id: kvittoInfo.rows[0].id,
-                datum: kvittoInfo.rows[0].datum, kategori: kvittoInfo.rows[0].kategori, fixad: kvittoInfo.rows[0].fixad,
+                vara: await kvittoInfo.rows[0].vara, pris: await kvittoInfo.rows[0].pris, swish: await kvittoInfo.rows[0].swish, id: await kvittoInfo.rows[0].id,
+                datum: await kvittoInfo.rows[0].datum, kategori: await kvittoInfo.rows[0].kategori, fixad: await kvittoInfo.rows[0].fixad,
             }
         },
     };
