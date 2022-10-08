@@ -6,13 +6,14 @@ export default function SkickaKvitto() {
         vara: "",
         pris: "",
         datum: "",
-        bild: "",
-        bildnamn: "",
         swish: "",
+        bild: "",
         kategori: "Laborationer",
         typavkop: "avgift",
         fixad: false
     })
+    const [bild, setBild] = useState(undefined)
+    const [bildnamn, setBildNamn] = useState("")
     const [skickat, setSkickat] = useState("")
 
     const handleSubmit = async event => {
@@ -20,23 +21,25 @@ export default function SkickaKvitto() {
         await fetch('/api/laddaUppBild', {
             method: 'POST',
             body: JSON.stringify({
-                bild: state.bild,
-                namn: state.bildnamn
+                bild: bild,
+                namn: bildnamn
             }),
         }).then(res => res.json())
-        .then(async bildUrl => await fetch('/api/laddaUppData', {
-            method: 'POST',
-            body: JSON.stringify({
-                vara: state.vara,
-                pris: state.pris,
-                datum: state.datum,
-                bild: bildUrl.bildUrl,
-                swish: state.swish,
-                kategori: state.kategori,
-                typavkop: state.typavkop,
-                fixad: state.fixad
-            }),
-        }));
+            .then(async bildUrl => await fetch('/api/laddaUppData', {
+                method: 'POST',
+                body: JSON.stringify({
+                    vara: state.vara,
+                    pris: state.pris,
+                    datum: state.datum,
+                    bild: bildUrl.bildUrl,
+                    swish: state.swish,
+                    kategori: state.kategori,
+                    typavkop: state.typavkop,
+                    fixad: state.fixad
+                }),
+            }));
+        setBild("")
+        setBildNamn("")
         setState({
             ...state,
             vara: "",
@@ -54,15 +57,16 @@ export default function SkickaKvitto() {
     const hanteraNytt = async event => {
         if (event.target.name === "bild") {
             let reader = new FileReader()
-            reader.readAsDataURL(event.target.files[0])
-            const namn = (event.target.files[0].name)
-            reader.onload = async () => {
-                setState({
-                    ...state,
-                    bild: reader.result,
-                    bildnamn: namn,
-                })
+            reader.onloadend = function () {
+                setBild(reader.result)
             }
+            reader.readAsDataURL(event.target.files[0])
+            setBildNamn(event.target.files[0].name)
+            const value = event.target.value;
+            setState({
+                ...state,
+                [event.target.name]: value
+            });
         } else {
             setState({
                 ...state,
@@ -79,9 +83,9 @@ export default function SkickaKvitto() {
                 <button name="typavkop" value="intäkt" onClick={hanteraNytt}>intäkt
                 </button>
             </div>
-            <form className={styles.formStyle} onSubmit={handleSubmit} onChange={hanteraNytt}>
+            <form className={styles.formStyle} onSubmit={handleSubmit}>
                 <label className={styles.labelStyle} htmlFor="kategori">kategori på {state.typavkop}:</label>
-                <select className={styles.kategori} name="kategori" id="kategori" required>
+                <select className={styles.kategori} name="kategori" id="kategori" required onChange={hanteraNytt}>
                     <option value="Laborationer" name="Laborationer">Laborationer
                     </option>
                     <option value="Medlemsavgifter" name="Medlemsavgifter">Medlemsavgifter
@@ -93,22 +97,24 @@ export default function SkickaKvitto() {
                 </select>
                 <label className={styles.labelStyle} htmlFor="vara">vara:</label>
                 <input type="text" name="vara" placeholder="namn på vara (max 16 tecken)" value={state.vara}
-                    maxLength={16} required
+                    maxLength={16} required onChange={hanteraNytt}
                 />
                 <label className={styles.labelStyle} htmlFor="pris">pris:</label>
-                <input type="number" name="pris" placeholder="pris (skriv inte kr)" value={state.pris} required
+                <input type="number" name="pris" placeholder="pris (skriv inte kr)" value={state.pris} required onChange={hanteraNytt}
                 />
                 <label className={styles.labelStyle} htmlFor="datum">datum:</label>
-                <input type="date" name="datum" value={state.datum} placeholder={Date.now()} required
+                <input type="date" name="datum" value={state.datum} placeholder={Date.now()} required onChange={hanteraNytt}
                 />
                 <label className={styles.labelStyle} htmlFor="bild">kvitto:</label>
-                <input type="file" accept="image/jpg, image/jpeg, image/png, image/gif, image/bmp" name="bild" value={state.bild} style={{ alignSelf: "center" }}
+                <input type="file" accept="image/*" name="bild" value={state.bild}
+                    style={{ alignSelf: "center" }}
                     placeholder="bild på kvitto"
                     required
+                    onChange={hanteraNytt}
                 />
                 <label className={styles.labelStyle} htmlFor="vara">swish-nummer:</label>
                 <input type="tel" name="swish" value={state.swish} placeholder={"swishnummer"} required
-                    pattern="[0-9]{3}-[0-9]{7}|[0-9]{10}" />
+                    pattern="[0-9]{3}-[0-9]{7}|[0-9]{10}" onChange={hanteraNytt} />
                 <button className={styles.buttonStyle} type="submit">
                     skicka in kvitto
                 </button>

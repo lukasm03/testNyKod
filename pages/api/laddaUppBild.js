@@ -7,6 +7,14 @@ const region = process.env.BUCKET_REGION
 const accessKeyId = process.env.AWS_ACCESS_KEY_ID_LUKAS
 const secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY_LUKAS
 
+export const config = {
+  api: {
+      bodyParser: {
+          sizeLimit: '4mb' // Set desired value here
+      }
+  }
+}
+
 export default async function handler(req,res) {
   const fil = JSON.parse(req.body)
   const base64Data = new Buffer.from(fil.bild.replace(/^data:image\/\w+;base64,/, ""), 'base64');
