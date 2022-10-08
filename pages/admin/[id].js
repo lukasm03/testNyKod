@@ -26,7 +26,7 @@ export default function Home({ data, bild }) {
 }
 export async function getStaticPaths() {
     const info = await databasAnslutning.query('SELECT * FROM kvitton ORDER BY id ASC')
-    const paths = JSON.parse(JSON.stringify(info.rows)).map((data) => ({
+    const paths = (info.rows).map((data) => ({
         params: {
             id: data.id.toString()
         }
@@ -36,7 +36,7 @@ export async function getStaticPaths() {
 
 export async function getStaticProps({ params }) {
     const kvittoInfo = await databasAnslutning.query('SELECT * FROM kvitton WHERE id = $1', [parseInt(params.id)])
-
+    console.log(await kvittoInfo.rows)
     return {
         props: {
             data: {
