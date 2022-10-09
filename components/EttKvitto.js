@@ -1,4 +1,3 @@
-const svgToMiniDataURI = require('mini-svg-data-uri');
 import Link from 'next/link';
 import Image from 'next/image';
 
